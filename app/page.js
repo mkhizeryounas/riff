@@ -39,6 +39,7 @@ const DETAILS = [
   ['Languages', 'Python 3.14, JavaScript (Node 24), TypeScript (Deno), Go 1.26, Rust 1.93, Java 25, C++ (g++ 15), C (gcc 15), Ruby 4.0, PHP 8.5, Bash 5.2'],
   ['Running code', 'Runs in an isolated sandbox with no network access. Each run gets up to 30 seconds and 512 MB of memory.'],
   ['Sync', 'Every keystroke, with live cursors and name tags. The status bar shows who is typing.'],
+  ['Whiteboard', 'Every pad has a Board tab next to the code, for sketching boxes and arrows together. It is powered by Excalidraw, shows everyone\'s pointer, and is saved with the pad.'],
   ['Saving', 'Pads save automatically as you type. Come back to the same link later and your code is still there.'],
   ['Accounts', 'None. You pick a name and a cursor colour when you join a pad.'],
   ['Privacy', "Anyone with a pad's link can read and edit it, so don't paste passwords or keys."],

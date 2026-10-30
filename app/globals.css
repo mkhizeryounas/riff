@@ -183,10 +183,24 @@ kbd {
 
 .tabs { display: flex; height: 36px; border-bottom: 1px solid var(--border); flex: none; }
 .tab {
-  display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; position: relative;
-  font: 12.5px var(--mono); border-right: 1px solid var(--border); background: var(--panel);
+  display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; position: relative; cursor: pointer;
+  font: 12.5px var(--mono); color: var(--muted); border: 0; border-right: 1px solid var(--border); background: var(--panel);
 }
-.tab::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--accent); }
+.tab:hover { color: var(--text); }
+.tab[aria-selected='true'] { color: var(--text); }
+.tab[aria-selected='true']::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--accent); }
+.tab svg { width: 13px; height: 13px; }
+.tab-people { display: flex; padding-left: 2px; }
+.tab-people i { width: 8px; height: 8px; margin-left: -2px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1.5px var(--panel); }
+
+/* Whiteboard (Excalidraw), shown in place of the editor. */
+.board { display: none; flex: 1; min-height: 0; position: relative; }
+.pad[data-view='board'] .board { display: block; }
+.pad[data-view='board'] #editor, .pad[data-view='board'] #cursor-pos, .pad[data-view='board'] #indent-label { display: none; }
+.board-canvas { position: absolute; inset: 0; }
+.loading-board { display: grid; place-items: center; }
+.board .excalidraw { --ui-font: var(--sans); }
+.board .excalidraw.theme--dark { --island-bg-color: var(--elev); --default-bg-color: var(--panel); }
 
 .gutter { background: var(--border); cursor: col-resize; position: relative; z-index: 3; touch-action: none; transition: background 0.15s; }
 .gutter::after { content: ''; position: absolute; inset: 0 -5px; } /* wider hit area */

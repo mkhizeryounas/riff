@@ -22,7 +22,7 @@ Everything runs on free tiers: Vercel, Supabase and OnlineCompiler.io.
 app/                 Next.js App Router
   page.js            Landing page
   new/               New pad form (name, language, your name)
-  p/[id]/            The pad: markup only, wired up by lib/pad.js
+  p/[id]/            The pad: markup wired up by lib/pad.js, plus the Excalidraw board
   api/run/           Runs code through OnlineCompiler.io (key stays on the server)
   api/pads/[id]/     Loads and saves pads in Supabase (secret key stays on the server)
 lib/
@@ -34,6 +34,7 @@ supabase/schema.sql  Database table
 ```
 
 - **Live editing** uses a Supabase Realtime broadcast channel per pad. Browsers send each other edits and cursors directly, and a browser that joins asks the others for anything it's missing.
+- **Whiteboard**: the Board tab is [Excalidraw](https://github.com/excalidraw/excalidraw), loaded the first time someone opens it. Its elements live in the same Yjs doc as the code (map `board`, keyed by element id), so it syncs and saves the same way; Excalidraw's element versions decide which edit wins. Pointers and selections travel over awareness.
 - **Saving**: each browser posts its own edits to `/api/pads/[id]`, which appends them to the `pad_updates` table. Because saves only ever add rows, two people saving at once never overwrite each other. Loading merges the rows and compacts long logs into one row.
 - Anyone with a pad's link can read and edit it. There are no accounts.
 

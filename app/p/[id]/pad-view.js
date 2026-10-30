@@ -1,26 +1,56 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
+
+// Excalidraw is large, so it only loads the first time someone opens the board.
+const Board = dynamic(() => import('./board'), { ssr: false, loading: () => <div className="board-canvas loading-board"><span className="spinner" /></div> });
 
 // The markup is static; lib/pad.js wires the editor, realtime sync and controls into it.
 export default function PadView({ padId }) {
+  const [pad, setPad] = useState(null);
+  const [view, setView] = useState('code');
+  const [boardOpened, setBoardOpened] = useState(false);
+  const [drawing, setDrawing] = useState([]);
+
   useEffect(() => {
-    let cleanup;
+    let started;
     let cancelled = false;
     const createdKey = `riff:created:${padId}`;
     const skipJoin = sessionStorage.getItem(createdKey) === '1';
     sessionStorage.removeItem(createdKey);
     import('@/lib/pad').then(({ startPad }) => {
-      if (!cancelled) cleanup = startPad(padId, { skipJoin });
+      if (cancelled) return;
+      started = startPad(padId, { skipJoin });
+      setPad(started);
     });
     return () => {
       cancelled = true;
-      cleanup?.();
+      started?.destroy();
     };
   }, [padId]);
 
+  // Colours of the other people currently on the board, shown on its tab.
+  useEffect(() => {
+    if (!pad) return;
+    const { awareness, ydoc } = pad;
+    const update = () => {
+      const colors = [...awareness.getStates()]
+        .filter(([id, s]) => id !== ydoc.clientID && s.user && s.board)
+        .map(([id, s]) => `${id}:${s.user.color}`);
+      setDrawing((prev) => (prev.join() === colors.join() ? prev : colors));
+    };
+    awareness.on('change', update);
+    return () => awareness.off('change', update);
+  }, [pad]);
+
+  const open = (next) => {
+    setView(next);
+    if (next === 'board') setBoardOpened(true);
+  };
+
   return (
-    <div className="pad">
+    <div className="pad" data-view={view}>
       <header className="bar">
         <Link className="brand" href="/" title="Riff home"><img src="/logo.svg" alt="" width="20" height="20" /><span>riff</span></Link>
         <span className="slash">/</span>
@@ -62,10 +92,24 @@ export default function PadView({ padId }) {
 
       <main>
         <section className="pane editor-pane">
-          <div className="tabs">
-            <div className="tab"><i id="tab-dot" className="lang-dot" /><span id="tab-name">main.py</span></div>
+          <div className="tabs" role="tablist">
+            <button className="tab" role="tab" aria-selected={view === 'code'} onClick={() => open('code')}>
+              <i id="tab-dot" className="lang-dot" /><span id="tab-name">main.py</span>
+            </button>
+            <button className="tab" role="tab" aria-selected={view === 'board'} onClick={() => open('board')} title="A shared whiteboard for sketching ideas">
+              <svg viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
+              <span>Board</span>
+              {drawing.length > 0 && (
+                <span className="tab-people" title={`${drawing.length} on the board`}>
+                  {drawing.slice(0, 4).map((key) => <i key={key} style={{ '--c': key.split(':')[1] }} />)}
+                </span>
+              )}
+            </button>
           </div>
           <div id="editor" />
+          <div className="board">
+            {pad && boardOpened && <Board ydoc={pad.ydoc} awareness={pad.awareness} active={view === 'board'} />}
+          </div>
           <div className="loading"><span className="spinner" /></div>
         </section>
         <div id="gutter" className="gutter" role="separator" aria-orientation="vertical" aria-label="Resize panels" title="Drag to resize · double-click to reset" />
