@@ -6,34 +6,53 @@ Shared code pads. Open a pad, send the link, and edit and run code together in r
 
 ```sh
 make install
-make env         # then fill in .env
+make env         # then fill in .env.local
 make check-key   # confirm OnlineCompiler accepts the key
 make check-db    # confirm Supabase is reachable
-make start       # http://localhost:3000
+make dev         # http://localhost:3000
 ```
 
-`make dev` rebuilds the client and restarts the server on change. Run `make` to see every command.
+Run `make` to see every command.
 
-## Layout
+## How it works
+
+Everything runs on free tiers: Vercel, Supabase and OnlineCompiler.io.
 
 ```
-packages/shared   Language list and starter code, used by both apps
-apps/server       Node http + ws: serves the web app, syncs pads (Yjs), proxies /api/run
-apps/web          CodeMirror 6 + Yjs client, bundled with esbuild into public/assets
+app/                 Next.js App Router
+  page.js            Landing page
+  new/               New pad form (name, language, your name)
+  p/[id]/            The pad: markup only, wired up by lib/pad.js
+  api/run/           Runs code through OnlineCompiler.io (key stays on the server)
+  api/pads/[id]/     Loads and saves pads in Supabase (secret key stays on the server)
+lib/
+  pad.js             Editor (CodeMirror + Yjs), presence, console, controls
+  provider.js        Syncs the Yjs doc over Supabase Realtime and saves it via /api/pads
+  languages.js       Languages, starter code and OnlineCompiler ids
+  server/            Server-only code for the API routes
+supabase/schema.sql  Database table
 ```
 
-- Pads live at `/p/<id>`, and `/new` creates one.
-- Pads are saved in a Supabase `pads` table. Create it once by running `supabase/schema.sql` in the Supabase SQL editor. Without Supabase settings, pads are saved to `apps/server/data/` instead, which is fine for local development.
-- Code runs through the [OnlineCompiler.io API](https://onlinecompiler.io/docs). The key stays on the server.
+- **Live editing** uses a Supabase Realtime broadcast channel per pad. Browsers send each other edits and cursors directly, and a browser that joins asks the others for anything it's missing.
+- **Saving**: each browser posts its own edits to `/api/pads/[id]`, which appends them to the `pad_updates` table. Because saves only ever add rows, two people saving at once never overwrite each other. Loading merges the rows and compacts long logs into one row.
 - Anyone with a pad's link can read and edit it. There are no accounts.
+
+## Set up Supabase
+
+1. Run `supabase/schema.sql` in the Supabase SQL editor.
+2. Copy the project URL, publishable key and secret key into `.env.local`.
+
+## Deploy to Vercel
+
+1. Import the repo in Vercel. The defaults for Next.js work as they are.
+2. Add the five variables from `.env.example` in Project Settings → Environment Variables.
+3. Deploy, or run `make deploy` from your machine.
 
 ## Environment
 
-| Variable              | Default                 |
-| --------------------- | ----------------------- |
-| `ONLINECOMPILER_API_KEY` | required for Run     |
-| `SUPABASE_URL`        | local disk if unset     |
-| `SUPABASE_SECRET_KEY` | local disk if unset     |
-| `PORT`                | `3000`                  |
-| `DATA_DIR`            | `apps/server/data`      |
-| `PUBLIC_DIR`          | `apps/web/public`       |
+| Variable                               | Where it's used      |
+| -------------------------------------- | -------------------- |
+| `ONLINECOMPILER_API_KEY`               | Server: running code |
+| `SUPABASE_URL`, `SUPABASE_SECRET_KEY`  | Server: saving pads  |
+| `NEXT_PUBLIC_SUPABASE_URL`             | Browser: live sync   |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Browser: live sync   |
